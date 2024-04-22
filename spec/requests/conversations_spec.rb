@@ -22,8 +22,10 @@ RSpec.describe 'Conversations API', type: :request do
 
     context 'when user have conversations' do
       # TODOS: Populate database with conversation of current user
-
-      before { get '/conversations', params: {}, headers: dimas_headers }
+      before do
+        create_conversations_for_dimas(dimas)
+        get '/conversations', params: {}, headers: dimas_headers
+      end
 
       it 'returns list conversations of current user' do
         # Note `response_data` is a custom helper
@@ -63,6 +65,9 @@ RSpec.describe 'Conversations API', type: :request do
   describe 'GET /conversations/:id' do
     context 'when the record exists' do
       # TODO: create conversation of dimas
+      let!(:conversation) { Conversation.create(user1: dimas, user2: samid) }
+      let(:convo_id) { conversation.id }
+
       before { get "/conversations/#{convo_id}", params: {}, headers: dimas_headers }
 
       it 'returns conversation detail' do
@@ -81,6 +86,9 @@ RSpec.describe 'Conversations API', type: :request do
     end
 
     context 'when current user access other user conversation' do
+      let!(:conversation) { Conversation.create(user1: samid, user2: dimas) }
+      let(:convo_id) { conversation.id }
+
       before { get "/conversations/#{convo_id}", params: {}, headers: samid_headers }
 
       it 'returns status code 403' do
@@ -94,6 +102,16 @@ RSpec.describe 'Conversations API', type: :request do
       it 'returns status code 404' do
         expect(response).to have_http_status(404)
       end
+    end
+
+  end
+  
+  # Helper method to create conversations for dimas
+  def create_conversations_for_dimas(user)
+    other_users = create_list(:user, 5)
+
+    other_users.each do |other_user|
+      Conversation.create(user1: user, user2: other_user)
     end
   end
 end
